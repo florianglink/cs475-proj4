@@ -1,23 +1,125 @@
+// /*  main.c  - main */
+
+// #include <xinu.h>
+// #include <stdio.h>
+
+// void    printchar(char c)
+// {
+//     lid32 lock = lock_create();
+//     int i;
+//     acquire(lock);
+//     for (i=0; i<10; i++)
+//         kprintf("%c", c);
+//     release(lock);
+// }
+
+// int main(uint32 argc, uint32 *argv)
+// {
+//     //priority of process is input as the 3rd argument of create()
+//     ready(create((void*) printchar, INITSTK, 15, "P1", 1, 'A'), FALSE);
+//     ready(create((void*) printchar, INITSTK, 15, "P2", 1, 'B'), FALSE);
+
+//     return 0;
+// }
+
 /*  main.c  - main */
 
 #include <xinu.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-mutex_t	lock = FALSE;
-void    printchar(char c)
+#define N 5	//number of philosophers and forks
+
+//TODO - locks must be declared and initialized here
+// mutex_t	fork[N] = {FALSE, FALSE, FALSE, FALSE, FALSE};
+lid32 lock;
+lid32 fork[N];
+
+
+/**
+ * Delay for a random amount of time
+ * @param alpha delay factor
+ */
+void	holdup(int32 alpha)
 {
-    int i;
-    mutex_lock(&lock);
-    for (i=0; i<10; i++)
-        kprintf("%c", c);
-    mutex_unlock(&lock);
+	long delay = rand() * alpha;
+	while (delay-- > 0)
+		;	//no op
 }
 
-int main(uint32 argc, uint32 *argv)
+/**
+ * Eat for a random amount of time
+ */
+void	eat()
 {
-    //priority of process is input as the 3rd argument of create()
-    ready(create((void*) printchar, INITSTK, 15, "P1", 1, 'A'), FALSE);
-    ready(create((void*) printchar, INITSTK, 15, "P2", 1, 'B'), FALSE);
+	holdup(10000);
+}
 
-    return 0;
+/**
+ * Think for a random amount of time
+ */
+void	think()
+{
+	holdup(1000);
+}
+
+
+
+/**
+ * Philosopher's code
+ * @param phil_id philosopher's id
+ */
+void	philosopher(uint32 phil_id)
+{
+	uint32 right = phil_id;				//right fork
+	uint32 left = N - ((N-phil_id) % N) - 1;	//left fork
+
+	while (TRUE)
+	{
+		//think 70% of the time
+		if ((rand()*1.0)/RAND_MAX < 0.7)
+		{
+			acquire(lock);
+			kprintf("Philosopher %d thinking: zzzzzZZZz\n", phil_id);
+			release(lock);
+
+			think();
+		}
+		else	//eat 30% of the time
+		{
+			acquire(fork[right]);	//grab the right fork (or wait)
+			if (&locktab[fork[left]].lock == FALSE)
+			{
+				acquire(fork[left]);	//grab the left fork
+
+				acquire(lock);
+				kprintf("Philosopher %d eating: nom nom nom\n", phil_id);
+				release(lock);
+
+				eat();
+
+				release(fork[left]);
+				release(fork[right]);
+			}
+			else
+			{
+				release(fork[right]);	//relinquish right fork
+			}
+		}
+	}
+}
+
+int	main(uint32 argc, uint32 *argv)
+{
+	lock = lock_create();
+	for(int i = 0; i < N; i++) {
+		fork[i] = lock_create();
+	}
+	ready(create((void*) philosopher, INITSTK, 15, "Ph1", 1, 0), FALSE);
+	ready(create((void*) philosopher, INITSTK, 15, "Ph2", 1, 1), FALSE);
+	ready(create((void*) philosopher, INITSTK, 15, "Ph3", 1, 2), FALSE);
+	ready(create((void*) philosopher, INITSTK, 15, "Ph4", 1, 3), FALSE);
+	ready(create((void*) philosopher, INITSTK, 15, "Ph5", 1, 4), FALSE);
+
+	return 0;
 }
