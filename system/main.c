@@ -31,7 +31,6 @@
 #define N 5	//number of philosophers and forks
 
 //TODO - locks must be declared and initialized here
-// mutex_t	fork[N] = {FALSE, FALSE, FALSE, FALSE, FALSE};
 lid32 lock;
 lid32 fork[N];
 
@@ -85,27 +84,27 @@ void	philosopher(uint32 phil_id)
 
 			think();
 		}
-		else	//eat 30% of the time
-		{
-			acquire(fork[right]);	//grab the right fork (or wait)
-			if (&locktab[fork[left]].lock == FALSE)
-			{
-				acquire(fork[left]);	//grab the left fork
+		// else	//eat 30% of the time
+		// {
+		// 	acquire(fork[right]);	//grab the right fork (or wait)
+		// 	if (&locktab[fork[left]].lock == FALSE)
+		// 	{
+		// 		acquire(fork[left]);	//grab the left fork
 
-				acquire(lock);
-				kprintf("Philosopher %d eating: nom nom nom\n", phil_id);
-				release(lock);
+		// 		acquire(lock);
+		// 		kprintf("Philosopher %d eating: nom nom nom\n", phil_id);
+		// 		release(lock);
 
-				eat();
+		// 		eat();
 
-				release(fork[left]);
-				release(fork[right]);
-			}
-			else
-			{
-				release(fork[right]);	//relinquish right fork
-			}
-		}
+		// 		release(fork[left]);
+		// 		release(fork[right]);
+		// 	}
+		// 	else
+		// 	{
+		// 		release(fork[right]);	//relinquish right fork
+		// 	}
+		// }
 	}
 }
 
