@@ -185,7 +185,7 @@ static	void	sysinit(void)
 		lptr->lock = FALSE;
 		lptr->wait_queue = newqueue();
 	}
-
+	
 	/* Initialize buffer pools */
 
 	bufinit();

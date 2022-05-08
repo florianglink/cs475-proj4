@@ -33,24 +33,23 @@ local lid32 newlock(void)
 	static lid32 nextlock = 0; /* next lockid to try	*/
 	lid32 lockid;			   /* ID to return	*/
 	int32 i;				   /* iterate through # entries	*/
-	struct lockentry *lptr;
 
 	// TODO START
 
 	// TODO - loop through each element in the lock table.
 	for (i = 0; i < NLOCK; i++)
 	{
-		lptr = &locktab[i];
 		// TODO - and find a lock that is free to use
 		// TODO - set its state to used, and reset the mutex to FALSE
-		if (lptr->state == LOCK_FREE)
+		if (locktab[i].state == LOCK_FREE)
 		{
-			lptr->state = LOCK_USED;
-			lptr->lock = FALSE;
+			locktab[i].state = LOCK_USED;
+			locktab[i].lock = FALSE;
 			// TODO - return its lockid
-			lockid = i;
+			lockid = nextlock;
 			return lockid;
 		}
+		nextlock++;
 	}
 
 	// TODO - if there is no such lock, return SYSERR
@@ -94,6 +93,7 @@ syscall lock_delete(lid32 lockid)
 	{
 		currpid = dequeue(lptr->wait_queue);
 		prptr = &proctab[currpid];
+		prptr->prstate = PR_READY;
 		enqueue(currpid, readyqueue, prptr->prprio);
 	}
 
@@ -139,10 +139,9 @@ syscall acquire(lid32 lockid)
 	// TODO END
 
 	restore(mask); // reenable interrupts
-
 	// TODO START
 	// TODO - lock the mutex!
-	lptr->lock = TRUE;
+	mutex_lock(lptr->lock);
 	// TODO END
 
 	mask = disable(); // disable interrupts
@@ -183,7 +182,7 @@ syscall release(lid32 lockid)
 	remove(currpid, lptr->wait_queue);
 
 	// TODO - unlock the mutex
-	lptr->lock = FALSE;
+	mutex_unlock(lptr->lock);
 
 	// TODO (RAG) - remove allocation edge from RAG
 	// TODO END

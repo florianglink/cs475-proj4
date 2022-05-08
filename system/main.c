@@ -33,6 +33,7 @@
 //TODO - locks must be declared and initialized here
 lid32 lock;
 lid32 fork[N];
+int32 counter = 0;
 
 
 /**
@@ -72,8 +73,9 @@ void	philosopher(uint32 phil_id)
 {
 	uint32 right = phil_id;				//right fork
 	uint32 left = N - ((N-phil_id) % N) - 1;	//left fork
+	bool8 cont = TRUE;
 
-	while (TRUE)
+	while (cont)
 	{
 		//think 70% of the time
 		if ((rand()*1.0)/RAND_MAX < 0.7)
@@ -84,27 +86,31 @@ void	philosopher(uint32 phil_id)
 
 			think();
 		}
-		// else	//eat 30% of the time
-		// {
-		// 	acquire(fork[right]);	//grab the right fork (or wait)
-		// 	if (&locktab[fork[left]].lock == FALSE)
-		// 	{
-		// 		acquire(fork[left]);	//grab the left fork
+		else	//eat 30% of the time
+		{
+			acquire(fork[right]);	//grab the right fork (or wait)
+			if (locktab[fork[left]].lock == FALSE)
+			{
+				acquire(fork[left]);	//grab the left fork
 
-		// 		acquire(lock);
-		// 		kprintf("Philosopher %d eating: nom nom nom\n", phil_id);
-		// 		release(lock);
+				acquire(lock);
+				kprintf("Philosopher %d eating: nom nom nom\n", phil_id);
+				release(lock);
 
-		// 		eat();
+				eat();
 
-		// 		release(fork[left]);
-		// 		release(fork[right]);
-		// 	}
-		// 	else
-		// 	{
-		// 		release(fork[right]);	//relinquish right fork
-		// 	}
-		// }
+				release(fork[left]);
+				release(fork[right]);
+			}
+			else
+			{
+				release(fork[right]);	//relinquish right fork
+			}
+			counter++;
+			if(counter >= 50) {
+				cont=FALSE;
+			}
+		}
 	}
 }
 
