@@ -115,6 +115,7 @@ syscall acquire(lid32 lockid)
 {
 	intmask mask;			// saved interrupt mask
 	struct lockentry *lptr; // ptr to sempahore table entry
+	struct procent *prptr;
 
 	mask = disable();
 	if (isbadlock(lockid))
@@ -132,7 +133,6 @@ syscall acquire(lid32 lockid)
 
 	// TODO START
 	// TODO - enqueue the current process ID on the lock's wait queue
-	struct procent *prptr;
 	prptr = &proctab[currpid];
 	enqueue(currpid, lptr->wait_queue, prptr->prprio);
 	// TODO (RAG) - add a request edge in the RAG
