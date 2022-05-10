@@ -46,10 +46,9 @@ local lid32 newlock(void)
 			locktab[i].state = LOCK_USED;
 			locktab[i].lock = FALSE;
 			// TODO - return its lockid
-			lockid = nextlock;
+			lockid = i;
 			return lockid;
 		}
-		nextlock++;
 	}
 
 	// TODO - if there is no such lock, return SYSERR
@@ -130,7 +129,6 @@ syscall acquire(lid32 lockid)
 		restore(mask);
 		return SYSERR;
 	}
-
 	// TODO START
 	// TODO - enqueue the current process ID on the lock's wait queue
 	prptr = &proctab[currpid];
@@ -141,7 +139,7 @@ syscall acquire(lid32 lockid)
 	restore(mask); // reenable interrupts
 	// TODO START
 	// TODO - lock the mutex!
-	mutex_lock(lptr->lock);
+	mutex_lock(&lptr->lock);
 	// TODO END
 
 	mask = disable(); // disable interrupts
@@ -182,11 +180,10 @@ syscall release(lid32 lockid)
 	remove(currpid, lptr->wait_queue);
 
 	// TODO - unlock the mutex
-	mutex_unlock(lptr->lock);
+	mutex_unlock(&lptr->lock);
 
 	// TODO (RAG) - remove allocation edge from RAG
 	// TODO END
-
 	restore(mask);
 	return OK;
 }
