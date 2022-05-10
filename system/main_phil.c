@@ -43,7 +43,7 @@ void think()
  */
 void philosopher(uint32 phil_id)
 {
-	uint32 right = phil_id;										 // right fork
+	uint32 right = phil_id;					   // right fork
 	uint32 left = N - ((N - phil_id) % N) - 1; // left fork
 	while (TRUE)
 	{
@@ -59,7 +59,7 @@ void philosopher(uint32 phil_id)
 		else // eat 30% of the time
 		{
 			acquire(fork[right]); // grab the right fork (or wait)
-			acquire(fork[left]);	// grab the left fork (or wait)
+			acquire(fork[left]);  // grab the left fork (or wait)
 
 			acquire(lock);
 			kprintf("Philosopher %d (pid=%d) eating: nom nom nom\n", phil_id, currpid);
@@ -77,7 +77,8 @@ int main(uint32 argc, uint32 *argv)
 {
 	int i;
 	lock = lock_create();
-	for(i = 0; i < N; i++) {
+	for (i = 0; i < N; i++)
+	{
 		fork[i] = lock_create();
 	}
 	ready(create((void *)philosopher, INITSTK, 15, "Ph1", 1, 0), FALSE);
@@ -86,4 +87,3 @@ int main(uint32 argc, uint32 *argv)
 
 	return 0;
 }
-

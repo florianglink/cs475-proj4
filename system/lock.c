@@ -94,6 +94,7 @@ syscall lock_delete(lid32 lockid)
 		prptr = &proctab[currpid];
 		prptr->prstate = PR_READY;
 		enqueue(currpid, readyqueue, prptr->prprio);
+		dealloc(currpid, lockid);
 	}
 
 	// TODO (RAG) - remove all RAG edges to and from this lock
@@ -134,6 +135,7 @@ syscall acquire(lid32 lockid)
 	prptr = &proctab[currpid];
 	enqueue(currpid, lptr->wait_queue, prptr->prprio);
 	// TODO (RAG) - add a request edge in the RAG
+	rag_request(currpid, lockid);
 	// TODO END
 
 	restore(mask); // reenable interrupts
@@ -146,6 +148,7 @@ syscall acquire(lid32 lockid)
 
 	// TODO START
 	// TODO (RAG) - we reache this point. Must've gotten the lock! Transform request edge to allocation edge
+	rag_alloc(currpid, lockid);
 	// TODO END
 
 	restore(mask); // reenable interrupts
@@ -183,6 +186,7 @@ syscall release(lid32 lockid)
 	mutex_unlock(&lptr->lock);
 
 	// TODO (RAG) - remove allocation edge from RAG
+	dealloc(currpid, lockid);
 	// TODO END
 	restore(mask);
 	return OK;

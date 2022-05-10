@@ -2,18 +2,21 @@
 
 #include <xinu.h>
 
+int32 counter = 0;
+
 /**
  * Reschedule processor to next ready process
  *
  */
-void	resched(void)		// assumes interrupts are disabled
+void resched(void) // assumes interrupts are disabled
 {
 	pid32 oldpid = currpid;
-	struct procent *ptold;	// ptr to table entry for old process
-	struct procent *ptnew;	// ptr to table entry for new process
+	struct procent *ptold; // ptr to table entry for old process
+	struct procent *ptnew; // ptr to table entry for new process
 
 	// If rescheduling is deferred, record attempt and return
-	if (Defer.ndefers > 0) {
+	if (Defer.ndefers > 0)
+	{
 		Defer.attempt = TRUE;
 		return;
 	}
@@ -21,28 +24,41 @@ void	resched(void)		// assumes interrupts are disabled
 	// Point to process table entry for the current (old) process
 	ptold = &proctab[currpid];
 
-        if (ptold->prstate == PR_CURR) {
-                // Old process got preempted; place back on ready queue
-                ptold->prstate = PR_READY;
-                enqueue(currpid, readyqueue, ptold->prprio);
-        }
+	if (ptold->prstate == PR_CURR)
+	{
+		// Old process got preempted; place back on ready queue
+		ptold->prstate = PR_READY;
+		enqueue(currpid, readyqueue, ptold->prprio);
+	}
 
-        // Force context switch to next ready process
-        currpid = dequeue(readyqueue);
-        ptnew = &proctab[currpid];
-        ptnew->prstate = PR_CURR;
+	// Force context switch to next ready process
+	currpid = dequeue(readyqueue);
+	ptnew = &proctab[currpid];
+	ptnew->prstate = PR_CURR;
 
 	// DC: Aging
 	if (AGING)
 		sched_age(readyqueue, oldpid, currpid);
 
-	//TODO
+	// TODO
 	preempt = QUANTUM;
 
 	// Context switch to next ready process
 	ctxsw(&ptold->prstkptr, &ptnew->prstkptr);
 
 	// Old process returns here when resumed
+
+	/* Call Deadlock Detect on 50 runs */
+	counter++;
+	if (counter >= 50)
+	{
+		intmask mask = disable(); // disable interrupts
+		deadlock_detect();
+		// other code with interrupt disabled
+		counter = 0;
+		kprintf("\n");
+		restore(mask); // reenable interrupts
+	}
 	return;
 }
 
@@ -52,14 +68,14 @@ void	resched(void)		// assumes interrupts are disabled
  * @param oldpid	the old pid (switched out)
  * @param newpid	the new pid (switched in)
  */
-void	sched_age(struct queue *q, pid32 oldpid, pid32 newpid)
+void sched_age(struct queue *q, pid32 oldpid, pid32 newpid)
 {
 	if (nonempty(q))
 	{
 		struct qentry *curr = q->head;
 		while (curr != NULL)
 		{
-			//do not increment priority of null proc, old proc, or new proc
+			// do not increment priority of null proc, old proc, or new proc
 			if (curr->pid != 0 && curr->pid != oldpid && curr->pid != newpid)
 			{
 				curr->key++;
