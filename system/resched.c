@@ -3,6 +3,8 @@
 #include <xinu.h>
 
 int32 counter = 0;
+pid32 victim;
+lid32 dlLock;
 
 /**
  * Reschedule processor to next ready process
@@ -43,22 +45,29 @@ void resched(void) // assumes interrupts are disabled
 	// TODO
 	preempt = QUANTUM;
 
+	/* Call Deadlock Detect on 50 runs */
+	counter++;
+	if (counter == 100)
+	{
+		intmask mask = disable(); // disable interrupts
+		//detect a deadlock
+		deadlock_detect();
+		counter = 0;
+		//if there is a victim and its lock then recover from it
+		if(victim != NULL && dlLock != NULL) {
+			kprintf("\n");
+			deadlock_recover();
+		}
+		kprintf("\n");
+		// other code with interrupt disabled
+		restore(mask); // reenable interrupts
+	}
+
 	// Context switch to next ready process
 	ctxsw(&ptold->prstkptr, &ptnew->prstkptr);
 
 	// Old process returns here when resumed
 
-	/* Call Deadlock Detect on 50 runs */
-	counter++;
-	if (counter >= 50)
-	{
-		intmask mask = disable(); // disable interrupts
-		deadlock_detect();
-		// other code with interrupt disabled
-		counter = 0;
-		kprintf("\n");
-		restore(mask); // reenable interrupts
-	}
 	return;
 }
 

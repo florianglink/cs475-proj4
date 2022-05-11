@@ -27,7 +27,7 @@ void holdup(int32 alpha)
 void work(uint32 id)
 {
 	acquire(printer_lock);
-	kprintf("Worker %d: Buzz buzz buzz\n", id);
+	kprintf("Worker %d (pid = %d): Buzz buzz buzz\n", id, currpid);
 	release(printer_lock);
 	holdup(10000);
 }
