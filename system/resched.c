@@ -45,9 +45,9 @@ void resched(void) // assumes interrupts are disabled
 	// TODO
 	preempt = QUANTUM;
 
-	/* Call Deadlock Detect on 50 runs */
+	/* Call Deadlock Detect on 100 runs sometimes doesn't detect on 50 */
 	counter++;
-	if (counter == 100)
+	if (counter == 200)
 	{
 		intmask mask = disable(); // disable interrupts
 		//detect a deadlock

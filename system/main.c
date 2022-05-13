@@ -4,10 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 2
+#define N 3 // number of philosophers and forks
 
-lid32 printer_lock;
-lid32 mylock[N];
+// TODO - locks must be declared and initialized here
+lid32 lock;
+lid32 fork[N];
 
 /**
  * Delay for a random amount of time
@@ -21,51 +22,69 @@ void holdup(int32 alpha)
 }
 
 /**
- * Work for a random amount of time
- * @param id ID of worker
+ * Eat for a random amount of time
  */
-void work(uint32 id)
+void eat()
 {
-	acquire(printer_lock);
-	kprintf("Worker %d (pid = %d): Buzz buzz buzz\n", id, currpid);
-	release(printer_lock);
 	holdup(10000);
 }
 
 /**
- * Worker code
- * @param id ID of worker
+ * Think for a random amount of time
  */
-void worker(uint32 id)
+void think()
 {
-	if (id == 0)
+	holdup(1000);
+}
+
+/**
+ * Philosopher's code
+ * @param phil_id philosopher's id
+ */
+void philosopher(uint32 phil_id)
+{
+	uint32 right = phil_id;					   // right fork
+	uint32 left = N - ((N - phil_id) % N) - 1; // left fork
+	while (TRUE)
 	{
-		acquire(mylock[0]);
-		work(id);
-		acquire(mylock[1]);
-		work(id);
-		release(mylock[1]);
-		release(mylock[0]);
-	}
-	else
-	{
-		acquire(mylock[1]);
-		work(id);
-		acquire(mylock[0]);
-		work(id);
-		release(mylock[0]);
-		release(mylock[1]);
+		// think 70% of the time
+		if (rand() % 10 < 7)
+		{
+			acquire(lock);
+			kprintf("Philosopher %d (pid=%d) thinking: zzzzzZZZz\n", phil_id, currpid);
+			release(lock);
+
+			think();
+		}
+		else // eat 30% of the time
+		{
+			acquire(fork[right]); // grab the right fork (or wait)
+			acquire(fork[left]);  // grab the left fork (or wait)
+
+			acquire(lock);
+			kprintf("Philosopher %d (pid=%d) eating: nom nom nom\n", phil_id, currpid);
+			release(lock);
+
+			eat();
+
+			release(fork[left]);
+			holdup(10000);
+			release(fork[right]);
+		}
 	}
 }
 
 int main(uint32 argc, uint32 *argv)
 {
 	int i;
-	printer_lock = lock_create();
+	lock = lock_create();
 	for (i = 0; i < N; i++)
-		mylock[i] = lock_create();
-	ready(create((void *)worker, INITSTK, 15, "Worker 0", 1, 0), FALSE);
-	ready(create((void *)worker, INITSTK, 15, "Worker 1", 1, 1), FALSE);
+	{
+		fork[i] = lock_create();
+	}
+	ready(create((void *)philosopher, INITSTK, 15, "Ph1", 1, 0), FALSE);
+	ready(create((void *)philosopher, INITSTK, 15, "Ph2", 1, 1), FALSE);
+	ready(create((void *)philosopher, INITSTK, 15, "Ph3", 1, 2), FALSE);
 
 	return 0;
 }

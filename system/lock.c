@@ -98,6 +98,7 @@ syscall lock_delete(lid32 lockid)
 	}
 
 	// TODO (RAG) - remove all RAG edges to and from this lock
+	remove(currpid, lptr->wait_queue);
 
 	// TODO END
 
@@ -133,6 +134,7 @@ syscall acquire(lid32 lockid)
 	// TODO START
 	// TODO - enqueue the current process ID on the lock's wait queue
 	prptr = &proctab[currpid];
+	prptr->prstate = PR_CURR;
 	enqueue(currpid, lptr->wait_queue, prptr->prprio);
 	// TODO (RAG) - add a request edge in the RAG
 	rag_request(currpid, lockid);

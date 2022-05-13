@@ -127,10 +127,12 @@ void deadlock_recover()
     {
         dequeuedProc = dequeue(lptr->wait_queue);
         prptr = &proctab[dequeuedProc];
+        prptr->prstate = PR_READY;
         enqueue(dequeuedProc, readyqueue, prptr->prprio);
         //check if process is holding the lock
         if(dequeuedProc == victim) {
             kprintf("Entered IF\n");
+            kill(victim);
             //remove process from all lock queues if requested
             for(int32 lock = 0; lock < NLOCK; lock++) 
             {
@@ -140,13 +142,15 @@ void deadlock_recover()
                     remove(dequeuedProc, check->wait_queue);
                 }
             }
+            kprintf("Removed\n");
+            //mutex unlock the dlLock
+            mutex_unlock(&lptr->lock);
+            kprintf("Unloicked\n");
             //deallocate the victims allocation and request edges
             for(int32 lock = 0; lock < NLOCK; lock++) 
             {
                 dealloc(victim, lock);
             }
-            //mutex unlock the dlLock
-            mutex_unlock(&lptr->lock);
         }
     }
     kprintf("DEADLOCK RECOVERED: Killing pid = %d to release lock = %d", victim, dlLock);
